@@ -1,0 +1,20 @@
+module D_Multi #(parameter N = 48, Co = 6, M = 24)(CLK, Multiplier, Multiplicand, InitEn, WE, RE ,Reset, DoneO, DoneC, Out_M);
+input CLK, InitEn, WE, RE, Reset, DoneO;
+input [M-1:0]Multiplier, Multiplicand;
+output DoneC;
+wire [N-1:0] A, B,C,G;
+wire [N:0] E, F, C1;
+wire [M:0] D;
+wire  DoneC;
+output [N-1:0]Out_M;
+Sign_extend_M #(.N(N), .M(M)) S2 (.In(Multiplier), .Out(A));
+Mux2 #(.N(N)) M2(.In1(A), .In0(G), .S(InitEn), .Out(B));
+UpCounter #(.N(5)) UC (.CLK(CLK), .Reset(Reset), .EnC(InitEn), .DoneC(DoneC));
+Register_8bit #(.N(N)) Reg1(.In(B), .Reset(Reset), .CLK(CLK), .Out(C), .WE(WE), .RE(RE));
+Add_24bit Add(.In1(C[47:24]), .In2(Multiplicand), .Out(D[23:0]), .Over(D[24]));
+Concatenation_49bit Conc( .In1(D[23:0]), .In2(C[23:0]), .InOv(D[24]), .Out(E));
+Sign_extend_R SER (.In(C), .Out(C1));
+Mux2to1_48bit M48(.In1(E), .In0(C1), .Out(F), .S(C[0]));
+Shift_right_1b SR(.In(F), .Out(G));
+TriState #(.N(N)) Tri2 (.Out(Out_M), .En(DoneO), .In(C));
+endmodule
